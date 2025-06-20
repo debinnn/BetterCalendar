@@ -1,42 +1,181 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Professional Dark Dashboard Theme */
+:root {
+  --background: #1a1a1a;
+  --background-card: #23232a;
+  --background-card-alt: #2a2a2a;
+  --foreground: #fff;
+  --foreground-secondary: #e0e0e0;
+  --foreground-muted: #b0b0b0;
+  --border: #23232a;
+  --border-alt: #2a2a2a;
+  --accent: #22d3ee;
+  --accent-hover: #0ea5e9;
+  --success: #22c55e;
+  --warning: #facc15;
+  --error: #ef4444;
+  --shadow: 0 4px 24px rgba(0,0,0,0.25);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.25s cubic-bezier(.4,0,.2,1);
+  --glass-bg: rgba(34, 212, 238, 0.08);
+  --glass-border: rgba(255,255,255,0.08);
+  font-family: 'Inter', 'SF Pro', 'Segoe UI', Arial, sans-serif;
 }
 
 html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-}
-
-body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans, 'Inter', 'SF Pro', 'Segoe UI', Arial, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  transition: background var(--transition), color var(--transition), border var(--transition), box-shadow var(--transition);
 }
 
 a {
-  color: inherit;
+  color: rgb(var(--accent-color));
   text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover {
+  color: rgb(var(--primary-color));
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+@layer base {
+  h1 {
+    @apply text-4xl font-bold mb-6 text-white;
+  }
+  h2 {
+    @apply text-2xl font-semibold mb-4 text-white;
+  }
+  h3 {
+    @apply text-xl font-medium mb-3 text-white;
+  }
+  p {
+    @apply text-gray-400;
+  }
+  button {
+    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  input, select, textarea {
+    @apply bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  background: var(--background-card-alt);
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--background-start-rgb));
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-alt);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--text-muted));
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+  color: var(--foreground);
+  background: var(--background-card);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-alt);
+  padding: 8px 12px;
+  outline: none;
+  transition: border var(--transition), box-shadow var(--transition);
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-hover);
+}
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+}
+button:hover, button:focus {
+  background: var(--accent-hover);
+  color: #fff;
+  box-shadow: 0 6px 32px rgba(34,211,238,0.18);
+}
+
+.card {
+  background: var(--background-card-alt);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-alt);
+}
+
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius);
+}
+
+hr, .divider {
+  border: none;
+  border-top: 1px solid var(--border-alt);
+  margin: 16px 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--foreground);
+  font-family: inherit;
+  margin-top: 0;
+}
+
+p, span, label, th, td {
+  color: var(--foreground-secondary);
+}
+
+.text-muted {
+  color: var(--foreground-muted);
+}
+
+.success {
+  color: var(--success);
+}
+.warning {
+  color: var(--warning);
+}
+.error {
+  color: var(--error);
+}
+
+@media (max-width: 700px) {
+  .card {
+    padding: 16px;
   }
 }
