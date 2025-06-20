@@ -198,7 +198,6 @@ export default function Calendar() {
     const daysInMonth = lastDayOfMonth.getDate();
     const startDayOfWeek = firstDayOfMonth.getDay();
     const endDayOfWeek = lastDayOfMonth.getDay();
-    const prevMonth = new Date(year, month - 1, 1);
     const daysInPrevMonth = new Date(year, month, 0).getDate();
     // Days from previous month
     const prevMonthDays = Array.from({ length: startDayOfWeek }, (_, i) => {
@@ -296,7 +295,6 @@ export default function Calendar() {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const isPast = dayDate < today;
-                const isToday = dayDate.getTime() === today.getTime();
                 return (
                   <div
                     key={i}
