@@ -384,4 +384,16 @@
     flex-direction: column;
     gap: 4px;
   }
+}
+
+.dayCellInactive {
+  background: var(--background);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.eventPast {
+  background: #b0b0b0 !important;
+  color: #fff !important;
+  opacity: 0.7;
 } 

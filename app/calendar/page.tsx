@@ -16,6 +16,7 @@ interface CalendarEvent {
     dateTime?: string;
     date?: string;
   };
+  colorId?: string;
 }
 
 interface AddEventBody {
@@ -28,6 +29,21 @@ interface AddEventBody {
   recurrence?: string[];
   colorId?: string;
 }
+
+// Google Calendar color palette
+const GOOGLE_EVENT_COLORS: { [key: string]: string } = {
+  "1": "#a4bdfc",
+  "2": "#7ae7bf",
+  "3": "#dbadff",
+  "4": "#ff887c",
+  "5": "#fbd75b",
+  "6": "#ffb878",
+  "7": "#46d6db",
+  "8": "#e1e1e1",
+  "9": "#5484ed",
+  "10": "#51b749",
+  "11": "#dc2127"
+};
 
 export default function Calendar() {
   const { data: session, status } = useSession();
@@ -173,6 +189,33 @@ export default function Calendar() {
     });
   }
 
+  // Helper to get days in month grid (with previous/next month days)
+  function getMonthGridDays(date: Date) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    const daysInMonth = lastDayOfMonth.getDate();
+    const startDayOfWeek = firstDayOfMonth.getDay();
+    const endDayOfWeek = lastDayOfMonth.getDay();
+    const prevMonth = new Date(year, month - 1, 1);
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    // Days from previous month
+    const prevMonthDays = Array.from({ length: startDayOfWeek }, (_, i) => {
+      const day = daysInPrevMonth - startDayOfWeek + i + 1;
+      return { date: new Date(year, month - 1, day), isCurrentMonth: false };
+    });
+    // Days in current month
+    const currentMonthDays = Array.from({ length: daysInMonth }, (_, i) => {
+      return { date: new Date(year, month, i + 1), isCurrentMonth: true };
+    });
+    // Days from next month
+    const nextMonthDays = Array.from({ length: 6 - endDayOfWeek }, (_, i) => {
+      return { date: new Date(year, month + 1, i + 1), isCurrentMonth: false };
+    });
+    return [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
+  }
+
   // Navigation handlers
   function goToPrev() {
     if (viewMode === 'monthly') {
@@ -246,18 +289,21 @@ export default function Calendar() {
               ))}
             </div>
             <div className={styles.daysGrid}>
-              {Array.from({ length: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() }, (_, i) => (
-                <div key={`empty-${i}`} className={styles.emptyCell}></div>
-              ))}
-              {Array.from({ length: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate() }, (_, i) => {
-                const day = i + 1;
-                const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+              {getMonthGridDays(currentDate).map(({ date: dayDate, isCurrentMonth }, i) => {
+                const day = dayDate.getDate();
                 const dayEvents = getEventsForDay(dayDate);
                 const showCount = 2;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isPast = dayDate < today;
+                const isToday = dayDate.getTime() === today.getTime();
                 return (
                   <div
-                    key={day}
-                    className={styles.dayCell}
+                    key={i}
+                    className={
+                      styles.dayCell +
+                      (!isCurrentMonth ? ' ' + styles.dayCellInactive : '')
+                    }
                     tabIndex={0}
                     role="button"
                     onClick={() => {
@@ -277,7 +323,19 @@ export default function Calendar() {
                     <span className={styles.dayNumber}>{day}</span>
                     <div className={styles.events}>
                       {dayEvents.slice(0, showCount).map((event) => (
-                        <div key={event.id} className={styles.event + (doneEvents[event.id] ? ' ' + styles.eventDone : '')}>
+                        <div
+                          key={event.id}
+                          className={
+                            styles.event +
+                            (doneEvents[event.id] ? ' ' + styles.eventDone : '') +
+                            (isPast ? ' ' + styles.eventPast : '')
+                          }
+                          style={
+                            !isPast && event.colorId
+                              ? { background: GOOGLE_EVENT_COLORS[event.colorId] || undefined, color: '#fff' }
+                              : undefined
+                          }
+                        >
                           {event.summary}
                         </div>
                       ))}
