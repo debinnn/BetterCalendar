@@ -83,7 +83,7 @@ export async function GET() {
 
     // Fetch events from all available calendars
     const allCalendars = calendarList.data.items || [];
-    let allEvents: any[] = [];
+    let allEvents: import('googleapis').calendar_v3.Schema$Event[] = [];
 
     for (const cal of allCalendars) {
       try {
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
       colorId: body.colorId,
     };
     // Remove undefined/null fields
-    Object.keys(event).forEach(key => (event as any)[key] == null && delete (event as any)[key]);
+    Object.keys(event).forEach(key => (event as Record<string, unknown>)[key] == null && delete (event as Record<string, unknown>)[key]);
     const response = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: event,

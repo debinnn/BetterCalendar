@@ -18,6 +18,17 @@ interface CalendarEvent {
   };
 }
 
+interface AddEventBody {
+  summary: string;
+  description: string;
+  location: string;
+  start: { date?: string; dateTime?: string };
+  end: { date?: string; dateTime?: string };
+  attendees?: { email: string }[];
+  recurrence?: string[];
+  colorId?: string;
+}
+
 export default function Calendar() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -423,7 +434,7 @@ export default function Calendar() {
                 setAddEventLoading(true);
                 setAddEventError(null);
                 try {
-                  const body: any = {
+                  const body: AddEventBody = {
                     summary: addEventForm.summary,
                     description: addEventForm.description,
                     location: addEventForm.location,
@@ -457,8 +468,12 @@ export default function Calendar() {
                   setAddEventForm({
                     summary: '', description: '', location: '', startDate: '', startTime: '', endDate: '', endTime: '', allDay: false, guests: '', recurrence: '', color: '',
                   });
-                } catch (err: any) {
-                  setAddEventError(err.message);
+                } catch (err) {
+                  if (err instanceof Error) {
+                    setAddEventError(err.message);
+                  } else {
+                    setAddEventError('An unknown error occurred');
+                  }
                 } finally {
                   setAddEventLoading(false);
                 }
