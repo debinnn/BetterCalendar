@@ -57,15 +57,17 @@ export async function GET() {
     console.log('Creating calendar client...');
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-    // Get events for the next 30 days instead of just the current month
+    // Get events for the current and next month (2 months)
     const now = new Date();
-    const thirtyDaysLater = new Date(now);
-    thirtyDaysLater.setDate(now.getDate() + 30);
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const timeMin = new Date(year, month, 1, 0, 0, 0, 0); // Start of current month
+    const timeMax = new Date(year, month + 2, 0, 23, 59, 59, 999); // End of next month
 
     console.log('Fetching calendar events...');
     console.log('Time range:', {
-      start: now.toISOString(),
-      end: thirtyDaysLater.toISOString()
+      start: timeMin.toISOString(),
+      end: timeMax.toISOString()
     });
 
     // First, try to get the calendar list to verify access
@@ -89,16 +91,22 @@ export async function GET() {
       try {
         const response = await calendar.events.list({
           calendarId: cal.id!,
-          timeMin: now.toISOString(),
-          timeMax: thirtyDaysLater.toISOString(),
-          maxResults: 100,
+          timeMin: timeMin.toISOString(),
+          timeMax: timeMax.toISOString(),
+          maxResults: 200,
           singleEvents: true,
           orderBy: 'startTime',
           showDeleted: false,
           showHiddenInvitations: false,
         });
         if (response.data.items && response.data.items.length > 0) {
-          allEvents = allEvents.concat(response.data.items.map(ev => ({ ...ev, _calendarSummary: cal.summary })));
+          allEvents = allEvents.concat(
+            response.data.items.map(ev => ({
+              ...ev,
+              _calendarSummary: cal.summary,
+              _calendarColor: cal.backgroundColor // fallback color
+            }))
+          );
         }
       } catch (err) {
         console.error(`Failed to fetch events for calendar ${cal.summary}:`, err);

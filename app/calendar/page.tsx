@@ -17,6 +17,11 @@ interface CalendarEvent {
     date?: string;
   };
   colorId?: string;
+  _calendarColor?: string;
+  description?: string;
+  location?: string;
+  attendees?: { email: string }[];
+  recurrence?: string[];
 }
 
 interface AddEventBody {
@@ -84,6 +89,8 @@ export default function Calendar() {
     }
     return {};
   });
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -133,6 +140,17 @@ export default function Calendar() {
   const reloadEvents = useCallback(async () => {
     await fetchEvents();
   }, [fetchEvents]);
+
+  // Animate detail panel in/out
+  useEffect(() => {
+    if (selectedEvent) {
+      setShowDetailPanel(true);
+    } else if (showDetailPanel) {
+      // Wait for animation before hiding
+      const timeout = setTimeout(() => setShowDetailPanel(false), 350);
+      return () => clearTimeout(timeout);
+    }
+  }, [selectedEvent]);
 
   if (status === 'loading' || isLoading) {
     return (
@@ -249,13 +267,19 @@ export default function Calendar() {
         <div className={styles.viewSwitcher}>
           <button
             className={viewMode === 'daily' ? styles.activeView : ''}
-            onClick={() => setViewMode('daily')}
+            onClick={() => {
+              setViewMode('daily');
+              setCurrentDate(new Date());
+            }}
           >
             Daily
           </button>
           <button
             className={viewMode === 'weekly' ? styles.activeView : ''}
-            onClick={() => setViewMode('weekly')}
+            onClick={() => {
+              setViewMode('weekly');
+              setCurrentDate(new Date());
+            }}
           >
             Weekly
           </button>
@@ -295,12 +319,14 @@ export default function Calendar() {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const isPast = dayDate < today;
+                const isToday = dayDate.getTime() === today.getTime();
                 return (
                   <div
                     key={i}
                     className={
                       styles.dayCell +
-                      (!isCurrentMonth ? ' ' + styles.dayCellInactive : '')
+                      (!isCurrentMonth ? ' ' + styles.dayCellInactive : '') +
+                      (isToday ? ' ' + styles.today : '')
                     }
                     tabIndex={0}
                     role="button"
@@ -328,11 +354,13 @@ export default function Calendar() {
                             (doneEvents[event.id] ? ' ' + styles.eventDone : '') +
                             (isPast ? ' ' + styles.eventPast : '')
                           }
-                          style={
-                            !isPast && event.colorId
-                              ? { background: GOOGLE_EVENT_COLORS[event.colorId] || undefined, color: '#fff' }
-                              : undefined
-                          }
+                          style={{
+                            background:
+                              !isPast && (event.colorId
+                                ? GOOGLE_EVENT_COLORS[event.colorId]
+                                : event._calendarColor) || undefined,
+                            color: !isPast && (event.colorId || event._calendarColor) ? '#fff' : undefined
+                          }}
                         >
                           {event.summary}
                         </div>
@@ -370,10 +398,14 @@ export default function Calendar() {
               {getWeekDays(currentDate).map((dayDate, i) => {
                 const dayEvents = getEventsForDay(dayDate);
                 const showCount = 2;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isPast = dayDate < today;
+                const isToday = dayDate.getTime() === today.getTime();
                 return (
                   <div
                     key={i}
-                    className={styles.dayCell}
+                    className={styles.dayCell + (isToday ? ' ' + styles.today : '')}
                     tabIndex={0}
                     role="button"
                     onClick={() => {
@@ -393,7 +425,21 @@ export default function Calendar() {
                     <span className={styles.dayNumber}>{dayDate.getDate()}</span>
                     <div className={styles.events}>
                       {dayEvents.slice(0, showCount).map((event) => (
-                        <div key={event.id} className={styles.event + (doneEvents[event.id] ? ' ' + styles.eventDone : '')}>
+                        <div
+                          key={event.id}
+                          className={
+                            styles.event +
+                            (doneEvents[event.id] ? ' ' + styles.eventDone : '') +
+                            (isPast ? ' ' + styles.eventPast : '')
+                          }
+                          style={{
+                            background:
+                              !isPast && (event.colorId
+                                ? GOOGLE_EVENT_COLORS[event.colorId]
+                                : event._calendarColor) || undefined,
+                            color: !isPast && (event.colorId || event._calendarColor) ? '#fff' : undefined
+                          }}
+                        >
                           {event.summary}
                         </div>
                       ))}
@@ -436,7 +482,15 @@ export default function Calendar() {
                         style={{ accentColor: '#22d3ee', width: 20, height: 20, marginRight: 6 }}
                       />
                     </label>
-                    <div className={styles.event + (doneEvents[event.id] ? ' ' + styles.eventDone : '')}>
+                    <div
+                      className={styles.event + (doneEvents[event.id] ? ' ' + styles.eventDone : '')}
+                      style={{
+                        background: event.colorId
+                          ? GOOGLE_EVENT_COLORS[event.colorId]
+                          : event._calendarColor || undefined,
+                        color: (event.colorId || event._calendarColor) ? '#fff' : undefined
+                      }}
+                    >
                       {event.summary}
                     </div>
                   </div>
@@ -448,8 +502,11 @@ export default function Calendar() {
       </div>
       {/* Modal for all events in a day */}
       {modalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setModalOpen(false)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+        <div className={styles.modalOverlay} onClick={() => { setModalOpen(false); setSelectedEvent(null); }}>
+          <div
+            className={styles.modal + (selectedEvent ? ' ' + styles.modalShifted : '')}
+            onClick={e => e.stopPropagation()}
+          >
             <h2 style={{ marginBottom: '1rem', textAlign: 'center' }}>
               Events for {modalDay?.toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })}
             </h2>
@@ -465,16 +522,51 @@ export default function Calendar() {
                       style={{ accentColor: '#6366f1', width: 16, height: 16, marginRight: 4 }}
                     />
                   </label>
-                  <div className={styles.event + (doneEvents[event.id] ? ' ' + styles.eventDone : '')}>
+                  <div
+                    className={styles.event + (doneEvents[event.id] ? ' ' + styles.eventDone : '')}
+                    style={{
+                      background: event.colorId
+                        ? GOOGLE_EVENT_COLORS[event.colorId]
+                        : event._calendarColor || undefined,
+                      color: (event.colorId || event._calendarColor) ? '#fff' : undefined,
+                      cursor: 'pointer',
+                      border: selectedEvent?.id === event.id ? '2px solid var(--accent)' : undefined
+                    }}
+                    onClick={() => setSelectedEvent(event)}
+                  >
                     {event.summary}
                   </div>
                 </div>
               ))}
             </div>
-            <button className={styles.retryButton} style={{ marginTop: '2rem', width: '100%' }} onClick={() => setModalOpen(false)}>
+            <button className={styles.retryButton} style={{ marginTop: '2rem', width: '100%' }} onClick={() => { setModalOpen(false); setSelectedEvent(null); }}>
               Close
             </button>
           </div>
+          {modalOpen && showDetailPanel && (
+            <div
+              className={
+                styles.eventDetailPanel +
+                (selectedEvent ? ' ' + styles.eventDetailPanelOpen : '')
+              }
+              onClick={e => e.stopPropagation()}
+              style={{ pointerEvents: selectedEvent ? 'auto' : 'none' }}
+            >
+              {selectedEvent && <>
+                <h3 style={{ marginBottom: 8, color: 'var(--accent)' }}>{selectedEvent.summary}</h3>
+                <div><b>Date:</b> {selectedEvent.start.dateTime ? new Date(selectedEvent.start.dateTime).toLocaleString() : selectedEvent.start.date}</div>
+                <div><b>End:</b> {selectedEvent.end.dateTime ? new Date(selectedEvent.end.dateTime).toLocaleString() : selectedEvent.end.date}</div>
+                {selectedEvent.location && <div><b>Location:</b> {selectedEvent.location}</div>}
+                {selectedEvent.description && <div><b>Description:</b> {selectedEvent.description}</div>}
+                {selectedEvent.attendees && selectedEvent.attendees.length > 0 && (
+                  <div><b>Attendees:</b> {selectedEvent.attendees.map(a => a.email).join(', ')}</div>
+                )}
+                {selectedEvent.recurrence && <div><b>Recurrence:</b> {selectedEvent.recurrence.join(', ')}</div>}
+                {selectedEvent.colorId && <div><b>Color ID:</b> {selectedEvent.colorId}</div>}
+                <button className={styles.retryButton} style={{ marginTop: 12 }} onClick={() => setSelectedEvent(null)}>Close Details</button>
+              </>}
+            </div>
+          )}
         </div>
       )}
       {/* Add Event Modal */}
