@@ -319,14 +319,13 @@ export default function Calendar() {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const isPast = dayDate < today;
-                const isToday = dayDate.getTime() === today.getTime();
                 return (
                   <div
                     key={i}
                     className={
                       styles.dayCell +
                       (!isCurrentMonth ? ' ' + styles.dayCellInactive : '') +
-                      (isToday ? ' ' + styles.today : '')
+                      (isPast ? ' ' + styles.eventPast : '')
                     }
                     tabIndex={0}
                     role="button"
@@ -401,11 +400,10 @@ export default function Calendar() {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const isPast = dayDate < today;
-                const isToday = dayDate.getTime() === today.getTime();
                 return (
                   <div
                     key={i}
-                    className={styles.dayCell + (isToday ? ' ' + styles.today : '')}
+                    className={styles.dayCell + (isPast ? ' ' + styles.eventPast : '')}
                     tabIndex={0}
                     role="button"
                     onClick={() => {
